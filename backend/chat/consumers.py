@@ -1,23 +1,25 @@
 # at chatapp/backend/chat/comsumers.py
 
 import json
-from django.contrib.auth import get_user_model
+
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
+from django.contrib.auth import get_user_model
+
 from .models import Conversation, Message
+
 User = get_user_model()
 
+
 class ChatConsumer(WebsocketConsumer):
-    
     def fetch_messages(self, data):
         try:
             conv_id = data['conversation']
-        except:
-            conv_id =1
+        except Exception:
+            conv_id = 1
         try:
-            conv = Conversation.objects.get(id=conv_id)     
-            
-        except:
+            conv = Conversation.objects.get(id=conv_id)
+        except Exception:
             pass
         messages = Message.objects.filter(conversation=conv)
         content = {
@@ -32,7 +34,7 @@ class ChatConsumer(WebsocketConsumer):
         author_user = User.objects.filter(username=author).first()
         message = Message.objects.create(
             conversation=conv,
-            author=author_user, 
+            author=author_user,
             content=data['message'])
         content = {
             'command': 'new_message',
@@ -76,9 +78,8 @@ class ChatConsumer(WebsocketConsumer):
     def receive(self, text_data):
         data = json.loads(text_data)
         self.commands[data['command']](self, data)
-        
 
-    def send_chat_message(self, message):    
+    def send_chat_message(self, message):
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {
